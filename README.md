@@ -1,4 +1,4 @@
-# WritingComInteractiveExporter
+# Writing.com Interactive Exporter
 A tool to export Interactive stories from Writing.com, made in C# with .net Core 5.
 
 # How it works
