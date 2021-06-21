@@ -18,6 +18,8 @@ namespace WritingComExporter
         private static string storyName;
         private static string storyIncipit;
         private static string pathStory;
+        private static bool incomplete = false;
+        
         private static List<OutlineMap> storyMap = new List<OutlineMap>();
         
         static void writeMsg(string msg)
@@ -149,6 +151,14 @@ namespace WritingComExporter
             
             pathStory = Path.Combine
                 (Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "WritingComStories", storyName);
+
+            if (Directory.Exists(pathStory))
+            {
+                writeCont("[?] A previous incomplete export session has been found. Would you like to begin from the last exported chapter? (Y/N) ");
+                string selection = Console.ReadLine();
+
+                if (selection.Equals("Y") || selection.Equals("y")) incomplete = true;
+            }
             
             Directory.CreateDirectory(pathStory + "\\map");
 
@@ -185,9 +195,17 @@ namespace WritingComExporter
             writeCont(">>> Exporting your story... This may take a while..!");
             var export_progress = createProgressBar(storyMap.Count, "Exporting your story...");
 
+            var incompleteFile = File.Create(pathStory + "\\incomplete.lock");
+
             foreach (var element in storyMap)
             {
                 export_progress.Tick("Exporting: " + element.title);
+
+                if (File.Exists(pathStory + "\\map\\" + element.map + ".html") && incomplete)
+                {
+                    continue;
+                }
+                
                 temporaryBypass(element.originalUrl, driver, export_progress);
 
                 using (var streamWriter = File.CreateText(pathStory + "\\map\\" + element.map + ".html"))
@@ -225,6 +243,8 @@ namespace WritingComExporter
                         streamWriter.WriteLine("<b>You've reached the end of the story!</b>");
                     }
                 }
+                
+                incompleteFile.Dispose();
             }
         }
 
@@ -239,7 +259,9 @@ namespace WritingComExporter
             initializeFolder();
             exportStory(chromeDriver);
             
+            File.Delete(pathStory + "\\incomplete.lock");
             writeMsg("[!!!] Export complete!");
+            chromeDriver.Quit();
         }
     }
 }
